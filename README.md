@@ -48,8 +48,8 @@ Funciona con cualquier endpoint `/v1/chat/completions` compatible con OpenAI: **
 ### Frontend
 
 ```bash
-git clone https://github.com/Meliodas-96/psicologist-nexus.git
-cd psicologist-nexus
+git clone https://github.com/Meliodas-96/Psicologo-nexus.git
+cd Psicologo-nexus
 cp .env.example .env      # edita con tu webhook y secreto
 npm install
 npm run build             # genera config.js desde .env
