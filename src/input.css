@@ -1,0 +1,355 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   TEMA — variables (light por defecto, .dark lo sobreescribe)
+   ============================================================ */
+
+:root {
+  --bg: #f2f3f8;
+  --bg-soft: rgba(255, 255, 255, .68);
+  --surface: rgba(255, 255, 255, .78);
+  --border: rgba(28, 28, 54, .1);
+  --text: #1a1c26;
+  --text-dim: #5c6076;
+  --shadow: 0 8px 30px rgba(70, 50, 140, .12);
+}
+
+html.dark {
+  --bg: #07080d;
+  --bg-soft: rgba(255, 255, 255, .03);
+  --surface: rgba(255, 255, 255, .05);
+  --border: rgba(255, 255, 255, .09);
+  --text: #eef0f6;
+  --text-dim: #9aa0b5;
+  --shadow: 0 8px 30px rgba(0, 0, 0, .45);
+}
+
+html, body { height: 100%; }
+body {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  transition: background .5s ease, color .5s ease;
+}
+main { flex: 1; min-height: 0; }
+
+/* ============================================================
+   FONDO 3D + cursor glow
+   ============================================================ */
+
+#bg3d { position: fixed; inset: 0; z-index: 0; width: 100%; height: 100%; pointer-events: none; }
+.bg-fade {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: linear-gradient(to bottom, transparent 55%, var(--bg));
+}
+html:not(.dark) #bg3d { opacity: .5; }
+
+/* Árbol del que nacen los pétalos (esquina superior derecha) */
+#tree, #tree-left {
+  position: fixed; top: -6px; z-index: 0;
+  width: min(420px, 46vw); height: auto;
+  pointer-events: none; user-select: none;
+  color: #3a2a52;
+  opacity: .5;
+  transition: opacity .6s ease;
+}
+#tree { right: -10px; }
+#tree-left { left: -10px; transform: scaleX(-1); }
+html.dark #tree, html.dark #tree-left { color: #b9a8e8; opacity: .38; }
+#tree:hover, #tree-left:hover { opacity: .8; }
+
+#cursor-glow {
+  position: fixed; z-index: 1; width: 480px; height: 480px; border-radius: 999px;
+  pointer-events: none; transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(124, 92, 255, .12) 0%, transparent 65%);
+  opacity: 0; transition: opacity .5s ease;
+}
+html.dark #cursor-glow.visible { opacity: 1; }
+html:not(.dark) #cursor-glow { display: none; }
+
+/* ============================================================
+   HEADER / FOOTER — cristal con línea de luz
+   ============================================================ */
+
+.header-glass, .footer-glass {
+  background: var(--bg-soft);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+.header-glass { border-bottom: 1px solid var(--border); }
+.footer-glass { border-top: 1px solid var(--border); }
+
+.header-glass::after, .footer-glass::before {
+  content: '';
+  position: absolute; left: 15%; right: 15%; height: 1px; pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(124,92,255,.45), rgba(0,212,255,.45), transparent);
+  opacity: 0; transition: opacity .6s ease;
+}
+.header-glass::after { bottom: -1px; }
+.footer-glass::before { top: -1px; }
+.header-glass:hover::after, .footer-glass:hover::before { opacity: 1; }
+
+/* Título de marca — quieto; brilla solo al pasar el ratón */
+.brand-title {
+  font-size: 1.25rem; font-weight: 700; letter-spacing: .02em; line-height: 1.15;
+  background: linear-gradient(90deg, #9675ff, #00d4ff);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  background-size: 200% auto;
+  transition: letter-spacing .4s ease;
+}
+.brand:hover .brand-title {
+  letter-spacing: .09em;
+  animation: shimmerText 1.6s linear infinite;
+}
+@keyframes shimmerText {
+  from { background-position: -200% center; }
+  to { background-position: 200% center; }
+}
+
+/* Logo — una vuelta completa SOLO al pasar el ratón */
+.logo3d {
+  box-shadow: 0 0 24px rgba(124, 92, 255, .35);
+  transform-style: preserve-3d;
+  transition: transform .8s cubic-bezier(.34, 1.25, .4, 1), box-shadow .4s ease;
+}
+.logo3d:hover {
+  transform: rotate(360deg) scale(1.12);
+  box-shadow: 0 0 38px rgba(124, 92, 255, .6), 0 0 60px rgba(0, 212, 255, .25);
+}
+.logo3d:active { transform: rotate(360deg) scale(.96); }
+
+/* ============================================================
+   PILLS Y BOTONES
+   ============================================================ */
+
+/* Estado */
+.status {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  transition: transform .35s cubic-bezier(.34, 1.56, .64, 1), border-color .3s, box-shadow .3s;
+}
+.status:hover {
+  transform: translateY(-2px) scale(1.05);
+  border-color: rgba(52, 211, 153, .55);
+  box-shadow: 0 0 18px rgba(52, 211, 153, .22);
+}
+.status-dot {
+  width: 8px; height: 8px; border-radius: 999px;
+  background: #34d399; box-shadow: 0 0 10px #34d399;
+}
+.status.offline .status-dot { background: #ff5c5c; box-shadow: 0 0 10px #ff5c5c; }
+
+/* Botón fantasma (tema) — cambia a violeta temporalmente al hover */
+.btn-ghost {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  position: relative; overflow: hidden;
+  transition: color .3s, border-color .3s, box-shadow .3s;
+}
+.btn-ghost:hover {
+  color: #7c5cff;
+  border-color: rgba(124, 92, 255, .55);
+  box-shadow: 0 0 22px rgba(124, 92, 255, .3);
+  animation: ghostPulse 1.4s ease-in-out infinite;
+}
+@keyframes ghostPulse {
+  0%, 100% { box-shadow: 0 0 14px rgba(124,92,255,.25); }
+  50% { box-shadow: 0 0 26px rgba(124,92,255,.45); }
+}
+
+/* Botón enviar — cambia a rosa/coral temporalmente al hover */
+.btn-send {
+  position: relative; overflow: hidden;
+  color: #fff;
+  background: linear-gradient(135deg, #7c5cff, #00d4ff);
+  box-shadow: 0 6px 20px rgba(124, 92, 255, .4);
+  transition: background .45s ease, box-shadow .35s ease;
+}
+.btn-send:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ff5c8a, #ff9a5c);
+  box-shadow: 0 0 30px rgba(255, 92, 138, .5);
+}
+.btn-send:active:not(:disabled) { filter: brightness(.92); }
+
+/* Brillo barrido al hover (botones con .btn-shine) */
+.btn-shine { position: relative; overflow: hidden; isolation: isolate; }
+.btn-shine::after {
+  content: '';
+  position: absolute; inset: 0; z-index: 1;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.5) 50%, transparent 60%);
+  transform: translateX(-130%) skewX(-12deg);
+  transition: transform .65s ease;
+  pointer-events: none;
+}
+.btn-shine:hover::after { transform: translateX(130%) skewX(-12deg); }
+
+/* Ripple al hacer click */
+.ripple {
+  position: absolute; z-index: 2;
+  border-radius: 999px; transform: scale(0);
+  background: rgba(255, 255, 255, .45);
+  pointer-events: none;
+  animation: ripple .6s ease-out forwards;
+}
+@keyframes ripple { to { transform: scale(3.4); opacity: 0; } }
+
+/* Icono del avión — despega al enviar */
+.send-icon { transition: transform .45s cubic-bezier(.34, 1.4, .5, 1), opacity .4s; }
+.send-icon.fly { animation: flyAway .55s ease forwards; }
+@keyframes flyAway {
+  45% { transform: translate(4px, -4px) rotate(12deg) scale(1.15); opacity: 1; }
+  100% { transform: translate(20px, -22px) rotate(28deg) scale(.3); opacity: 0; }
+}
+
+/* Tilt 3D (JS) */
+.tilt { transform-style: preserve-3d; will-change: transform; }
+.tilt.tilting { transition: none !important; }
+.tilt:not(.tilting) { transition: transform .35s cubic-bezier(.22, 1, .36, 1); }
+
+/* ============================================================
+   MENSAJES
+   ============================================================ */
+
+.avatar {
+  width: 38px; height: 38px; flex-shrink: 0;
+  display: grid; place-items: center;
+  border-radius: 12px; overflow: hidden;
+  transition: transform .45s cubic-bezier(.34, 1.56, .64, 1);
+}
+.avatar-bot { background: var(--surface); border: 1px solid var(--border); }
+.avatar-user { background: linear-gradient(135deg, #7c5cff, #5a3ee0); color: #fff; }
+.message:hover .avatar { transform: rotate(-9deg) scale(1.18); }
+.message.user:hover .avatar { transform: rotate(9deg) scale(1.18); }
+
+.bubble {
+  max-width: min(78%, 560px);
+  padding: 14px 18px;
+  font-size: .94rem; line-height: 1.65;
+  white-space: pre-wrap; overflow-wrap: break-word;
+  border-radius: 20px;
+  transition: transform .3s cubic-bezier(.22, 1, .36, 1), box-shadow .3s, border-color .3s, filter .3s;
+}
+.bubble-user {
+  background: linear-gradient(135deg, #7c5cff, #5a3ee0);
+  color: #fff;
+  border-bottom-right-radius: 6px;
+  box-shadow: 0 8px 26px rgba(106, 63, 232, .38);
+}
+.bubble-user:hover {
+  transform: translateY(-3px);
+  filter: brightness(1.1);
+  box-shadow: 0 16px 42px rgba(106, 63, 232, .55);
+}
+.bubble-bot {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-bottom-left-radius: 6px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+}
+.bubble-bot:hover {
+  transform: translateY(-3px);
+  border-color: rgba(0, 212, 255, .45);
+  box-shadow: 0 14px 38px rgba(0, 0, 0, .28), 0 0 24px rgba(0, 212, 255, .16);
+}
+html:not(.dark) .bubble-bot:hover { box-shadow: 0 14px 34px rgba(70, 50, 140, .16); }
+
+/* Texto con degradado (bienvenida) — animado solo al hover */
+.text-shimmer {
+  background: linear-gradient(90deg, #9675ff 20%, #00d4ff 40%, #9675ff 60%);
+  background-size: 200% auto;
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.text-shimmer:hover { animation: shimmerText 1.8s linear infinite; }
+
+/* ============================================================
+   CHIPS DE SUGERENCIA
+   ============================================================ */
+
+.chip {
+  padding: 9px 16px;
+  border-radius: 999px;
+  font-size: .8rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: transform .3s cubic-bezier(.34, 1.56, .64, 1), background .35s, color .3s, border-color .3s, box-shadow .3s;
+}
+.chip:hover {
+  color: #fff;
+  background: linear-gradient(135deg, #7c5cff, #00d4ff);
+  border-color: transparent;
+  transform: translateY(-3px) scale(1.04);
+  box-shadow: 0 8px 24px rgba(124, 92, 255, .4);
+}
+.chip:active { transform: translateY(-1px) scale(.98); }
+
+/* ============================================================
+   TYPING
+   ============================================================ */
+
+.typing-bubble { display: flex; align-items: center; gap: 6px; padding: 16px 20px; }
+.typing-bubble span {
+  width: 8px; height: 8px; border-radius: 999px;
+  background: var(--text-dim);
+  animation: bounceDot 1.3s ease-in-out infinite;
+}
+.typing-bubble span:nth-child(2) { animation-delay: .18s; }
+.typing-bubble span:nth-child(3) { animation-delay: .36s; }
+@keyframes bounceDot {
+  0%, 60%, 100% { transform: translateY(0); opacity: .4; }
+  30% { transform: translateY(-7px); opacity: 1; }
+}
+
+/* ============================================================
+   INPUT
+   ============================================================ */
+
+.input-shell {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  box-shadow: var(--shadow);
+  transition: border-color .3s, box-shadow .35s, transform .3s;
+}
+.input-shell:focus-within {
+  border-color: rgba(124, 92, 255, .65);
+  box-shadow: 0 0 0 4px rgba(124, 92, 255, .13), 0 10px 40px rgba(0, 0, 0, .3);
+  transform: translateY(-2px);
+}
+#chat-input {
+  flex: 1; min-width: 0;
+  border: none; outline: none; background: transparent;
+  color: var(--text);
+  font-family: inherit; font-size: .95rem;
+  padding: 10px 14px;
+}
+#chat-input::placeholder { color: var(--text-dim); }
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+
+#chat-scroll::-webkit-scrollbar { width: 7px; }
+#chat-scroll::-webkit-scrollbar-track { background: transparent; }
+#chat-scroll::-webkit-scrollbar-thumb { background: rgba(124, 92, 255, .35); border-radius: 999px; }
+#chat-scroll::-webkit-scrollbar-thumb:hover { background: rgba(124, 92, 255, .7); }
+
+/* ============================================================
+   ACCESIBILIDAD
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}

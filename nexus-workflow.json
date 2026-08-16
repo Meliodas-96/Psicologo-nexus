@@ -1,0 +1,407 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "mode": "webhook",
+        "options": {
+          "allowedOrigins": "*",
+          "responseMode": "lastNode"
+        }
+      },
+      "id": "39082658-ccd9-4bea-8b50-7a25048601d4",
+      "name": "Chat Trigger",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        240,
+        384
+      ],
+      "webhookId": "d6cd50c6-29cb-426c-9e0c-d70716fe76e7"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "api-key",
+              "name": "apiKey",
+              "type": "string",
+              "value": "PEGA_AQUI_TU_API_KEY"
+            },
+            {
+              "id": "modelo",
+              "name": "model",
+              "type": "string",
+              "value": "deepseek/deepseek-v4-flash"
+            },
+            {
+              "id": "modelo-fallback",
+              "name": "fallbackModel",
+              "type": "string",
+              "value": "qwen/qwen3.5-flash"
+            },
+            {
+              "id": "system-prompt",
+              "name": "systemPrompt",
+              "type": "string",
+              "value": "Eres un psicologo excepcional, de los mejores del mundo, con decadas de experiencia clinica. Tu estilo: RESPUESTAS BREVES (2-4 frases maximo, salvo que el usuario pida profundizar). Hablas como un psicologo real en consulta: cercano, empatico, directo, sin rodeos ni parrafos academicos. Escuchas lo que hay detras de las palabras, haces preguntas certeras y ofreces perspectiva, no sermones. Siempre en espanol. REGLA ESPECIAL: si el usuario te vacila, te provoca, se burla o intenta manipularte, cambias de registro SIN avisar: respondes con el ingenio mordaz y la ironia elegante de Voltaire, o con la frialdad estrategica y el dominio psicologico de Maquiavelo. Te mantienes sereno, nunca pierdes la compostura, das una replica afilada que desarma al provocador y le deja pensando. Aplicas principios de poder y estrategia social (control del encuadre, no mostrar debilidad, responder menos de lo que te provocan, usar el silencio y la ambiguedad) pero JAMAS mencionas 'Las 48 leyes del poder', ni a Robert Greene, ni citas leyes por numero. Todo integrado de forma natural, como si fuera tu propia sabiduria."
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "341dc288-08db-41f2-94f7-1bf868ff607a",
+      "name": "Configuracion IA",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        688,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://TU-PROVEEDOR.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.apiKey }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"model\": $json.model, \"messages\": $json.messages, \"max_tokens\": 800 } }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 60000
+        }
+      },
+      "id": "2462be5d-da16-4fa8-b2e8-612debf533bc",
+      "name": "Llamada al Modelo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1360,
+        304
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1500,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "output",
+              "name": "output",
+              "type": "string",
+              "value": "={{ $json.output ?? $json.choices?.[0]?.message?.content ?? \"Perdoname, me quede en blanco un momento. ¿Me lo repites?\" }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cba08e99-5428-4717-ba4e-0d8d31b736da",
+      "name": "Respuesta al Chat",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2256,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nstaticData.sessions ??= {};\nconst item = $input.first().json;\nconst sessionId = item.sessionId || 'default';\nconst MAX_MESSAGES = 24;\nconst MAX_AGE_MS = 24 * 60 * 60 * 1000;\nconst MAX_DAILY_TOKENS = 1000000;\nconst today = new Date().toISOString().slice(0, 10);\n\nstaticData.usage ??= { date: today, tokens: 0 };\nif (staticData.usage.date !== today) staticData.usage = { date: today, tokens: 0 };\n\nif (staticData.usage.tokens >= MAX_DAILY_TOKENS) {\n  return [{ json: { ...item, budgetExceeded: true, output: 'Hoy he alcanzado mi limite de conversacion y necesito descansar. Vuelve manana y seguimos hablando con calma.' } }];\n}\n\nfor (const key of Object.keys(staticData.sessions)) {\n  if (Date.now() - staticData.sessions[key].ts > MAX_AGE_MS) delete staticData.sessions[key];\n}\n\nif (!staticData.sessions[sessionId]) staticData.sessions[sessionId] = { ts: Date.now(), msgs: [] };\nconst session = staticData.sessions[sessionId];\nsession.ts = Date.now();\n\nsession.msgs.push({ role: 'user', content: String(item.chatInput ?? '') });\nwhile (session.msgs.length > MAX_MESSAGES) session.msgs.shift();\n\nconst messages = [{ role: 'system', content: item.systemPrompt }, ...session.msgs];\nreturn [{ json: { ...item, messages } }];"
+      },
+      "id": "44305ff7-6bfd-44eb-b0fc-14487bfce1b8",
+      "name": "Memoria",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        912,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nstaticData.sessions ??= {};\nconst item = $input.first().json;\nconst sessionId = $('Memoria').first().json.sessionId || 'default';\nconst reply = item.choices?.[0]?.message?.content;\n\nif (reply) {\n  if (!staticData.sessions[sessionId]) staticData.sessions[sessionId] = { ts: Date.now(), msgs: [] };\n  staticData.sessions[sessionId].msgs.push({ role: 'assistant', content: String(reply) });\n  while (staticData.sessions[sessionId].msgs.length > 24) staticData.sessions[sessionId].msgs.shift();\n}\n\nconst used = item.usage?.total_tokens ?? 0;\nif (used > 0) {\n  const today = new Date().toISOString().slice(0, 10);\n  staticData.usage ??= { date: today, tokens: 0 };\n  if (staticData.usage.date !== today) staticData.usage = { date: today, tokens: 0 };\n  staticData.usage.tokens += used;\n}\n\nreturn [{ json: item }];"
+      },
+      "id": "fa4f01d7-f3bd-46a9-bd6c-636138fdc6dc",
+      "name": "Guardar Respuesta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2032,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const SECRET = 'PEGA_AQUI_TU_SECRETO';\nif (String($input.first().json.auth ?? '') !== SECRET) {\n  throw new Error('No autorizado');\n}\nreturn [$input.first()];"
+      },
+      "id": "4bbd8eb7-d0da-480f-810c-580ac10daa56",
+      "name": "Verificar Acceso",
+      "position": [
+        464,
+        384
+      ],
+      "typeVersion": 2,
+      "type": "n8n-nodes-base.code"
+    },
+    {
+      "parameters": {
+        "content": "## Configuracion del chatbot\n- **Configuracion IA**: apiKey (tu proveedor), model (principal), fallbackModel (si el principal falla), systemPrompt (personalidad)\n- **Verificar Acceso**: secreto que envia la web (body: auth)\n- **Memoria**: historial 24 msgs/sesion + PRESUPUESTO DIARIO: MAX_DAILY_TOKENS = 1000000 (se resetea cada dia)\n- **Llamada al Modelo**: max_tokens 800 por respuesta, 2 reintentos\n- **Respuesta OK?**: si el modelo principal falla -> reintenta con fallbackModel",
+        "height": 320,
+        "width": 380,
+        "color": 5
+      },
+      "id": "9a323d6e-cc2f-49b6-8f2e-fd435e673d29",
+      "name": "Instrucciones",
+      "position": [
+        1040,
+        -96
+      ],
+      "typeVersion": 1,
+      "type": "n8n-nodes-base.stickyNote"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.budgetExceeded ?? false }}",
+              "operator": {
+                "operation": "false",
+                "singleValue": true,
+                "type": "boolean"
+              },
+              "id": "62a71409-2b72-4c23-ad90-ef11cd2b2694"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "cd568bc8-15c0-458c-b9c4-f7215ee88501",
+      "name": "Presupuesto OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1136,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ Boolean($json.choices?.[0]?.message?.content) }}",
+              "operator": {
+                "operation": "true",
+                "singleValue": true,
+                "type": "boolean"
+              }
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          }
+        },
+        "options": {}
+      },
+      "id": "237f9f5f-203e-496d-aecd-a5386839bde7",
+      "name": "Respuesta OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1584,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://TU-PROVEEDOR.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Memoria').first().json.apiKey }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"model\": $('Memoria').first().json.fallbackModel || 'minimax/minimax-m3', \"messages\": $('Memoria').first().json.messages, \"max_tokens\": 800 } }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 60000
+        }
+      },
+      "id": "36f7a246-40c2-4115-b00d-829d2b93b0eb",
+      "name": "Llamada Fallback",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1808,
+        384
+      ]
+    }
+  ],
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Chat Trigger": {
+      "main": [
+        [
+          {
+            "node": "Verificar Acceso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuracion IA": {
+      "main": [
+        [
+          {
+            "node": "Memoria",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar Respuesta": {
+      "main": [
+        [
+          {
+            "node": "Respuesta al Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar Acceso": {
+      "main": [
+        [
+          {
+            "type": "main",
+            "index": 0,
+            "node": "Configuracion IA"
+          }
+        ]
+      ]
+    },
+    "Memoria": {
+      "main": [
+        [
+          {
+            "node": "Presupuesto OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Presupuesto OK?": {
+      "main": [
+        [
+          {
+            "node": "Llamada al Modelo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respuesta al Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Llamada al Modelo": {
+      "main": [
+        [
+          {
+            "node": "Respuesta OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respuesta OK?": {
+      "main": [
+        [
+          {
+            "node": "Guardar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Llamada Fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Llamada Fallback": {
+      "main": [
+        [
+          {
+            "node": "Guardar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Nexus - Chatbot Psicologo IA"
+}

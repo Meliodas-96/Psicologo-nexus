@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nexus · Tu psicólogo IA</title>
+  <link rel="icon" type="image/webp" href="src/Logo.webp" />
+  <link rel="apple-touch-icon" href="src/Logo.webp" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- Glow que sigue al cursor (solo dark) -->
+  <div id="cursor-glow"></div>
+
+  <!-- Fondo 3D interactivo + árbol de pétalos -->
+  <canvas id="bg3d"></canvas>
+  <svg id="tree" viewBox="0 0 420 300" fill="none" aria-hidden="true">
+    <g stroke="currentColor" stroke-width="10" stroke-linecap="round" opacity=".85">
+      <path d="M415 8 C 350 30, 300 55, 268 100"/>
+      <path d="M330 42 C 300 80, 288 120, 292 168" stroke-width="7"/>
+      <path d="M300 58 C 258 68, 224 92, 205 130" stroke-width="6"/>
+      <path d="M268 100 C 232 108, 205 132, 192 170" stroke-width="5"/>
+      <path d="M292 168 C 268 200, 262 232, 270 268" stroke-width="4"/>
+      <path d="M205 130 C 178 148, 165 175, 168 205" stroke-width="4"/>
+    </g>
+    <g fill="currentColor" opacity=".55">
+      <circle cx="268" cy="100" r="13"/><circle cx="292" cy="168" r="11"/>
+      <circle cx="205" cy="130" r="10"/><circle cx="300" cy="58" r="9"/>
+      <circle cx="330" cy="42" r="9"/><circle cx="192" cy="170" r="8"/>
+      <circle cx="270" cy="268" r="7"/><circle cx="168" cy="205" r="7"/>
+    </g>
+    <g fill="#eca8d6" opacity=".8">
+      <circle cx="252" cy="88" r="4.5"/><circle cx="284" cy="112" r="4"/>
+      <circle cx="278" cy="152" r="4.5"/><circle cx="216" cy="142" r="4"/>
+      <circle cx="192" cy="118" r="3.5"/><circle cx="312" cy="62" r="3.5"/>
+      <circle cx="298" cy="188" r="4"/><circle cx="236" cy="178" r="3.5"/>
+    </g>
+  </svg>
+  <svg id="tree-left" viewBox="0 0 420 300" fill="none" aria-hidden="true">
+    <g stroke="currentColor" stroke-width="10" stroke-linecap="round" opacity=".85">
+      <path d="M415 8 C 350 30, 300 55, 268 100"/>
+      <path d="M330 42 C 300 80, 288 120, 292 168" stroke-width="7"/>
+      <path d="M300 58 C 258 68, 224 92, 205 130" stroke-width="6"/>
+      <path d="M268 100 C 232 108, 205 132, 192 170" stroke-width="5"/>
+      <path d="M292 168 C 268 200, 262 232, 270 268" stroke-width="4"/>
+      <path d="M205 130 C 178 148, 165 175, 168 205" stroke-width="4"/>
+    </g>
+    <g fill="currentColor" opacity=".55">
+      <circle cx="268" cy="100" r="13"/><circle cx="292" cy="168" r="11"/>
+      <circle cx="205" cy="130" r="10"/><circle cx="300" cy="58" r="9"/>
+      <circle cx="330" cy="42" r="9"/><circle cx="192" cy="170" r="8"/>
+      <circle cx="270" cy="268" r="7"/><circle cx="168" cy="205" r="7"/>
+    </g>
+    <g fill="#eca8d6" opacity=".8">
+      <circle cx="252" cy="88" r="4.5"/><circle cx="284" cy="112" r="4"/>
+      <circle cx="278" cy="152" r="4.5"/><circle cx="216" cy="142" r="4"/>
+      <circle cx="192" cy="118" r="3.5"/><circle cx="312" cy="62" r="3.5"/>
+      <circle cx="298" cy="188" r="4"/><circle cx="236" cy="178" r="3.5"/>
+    </g>
+  </svg>
+  <div class="bg-fade"></div>
+
+  <!-- ============ HEADER ============ -->
+  <header class="header-glass relative z-10 flex items-center justify-between px-5 md:px-8 py-4 animate-fade-up">
+    <div class="brand flex items-center gap-3.5 cursor-default">
+      <div id="logo-3d" class="logo3d w-11 h-11 grid place-items-center rounded-2xl" style="background:linear-gradient(135deg,#7c5cff,#00d4ff)">
+        <img src="src/Logo.webp" alt="Nexus" class="w-[34px] h-[34px] rounded-full object-cover ring-2 ring-white/30" />
+      </div>
+      <div>
+        <h1 class="brand-title">Nexus</h1>
+        <span class="block text-[.62rem] uppercase tracking-[.24em]" style="color:var(--text-dim)">Psicología · Estrategia · Claridad</span>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <div id="status" class="status flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs select-none">
+        <span class="status-dot"></span>
+        <span class="status-text">En línea</span>
+      </div>
+      <button id="theme-toggle" aria-label="Cambiar tema" title="Tema claro/oscuro"
+              class="tilt btn-ghost btn-shine w-10 h-10 grid place-items-center rounded-xl">
+        <svg id="icon-moon" class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+        <svg id="icon-sun" class="w-[18px] h-[18px] hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ============ CHAT ============ -->
+  <main id="chat-scroll" class="relative z-10 flex-1 overflow-y-auto px-4 md:px-16 py-7 scroll-smooth">
+    <div id="messages" class="max-w-3xl mx-auto flex flex-col gap-5"></div>
+    <div id="chips" class="max-w-3xl mx-auto mt-5 flex flex-wrap gap-2.5"></div>
+
+    <div id="typing" class="hidden max-w-3xl mx-auto mt-5 items-end gap-3">
+      <div class="avatar avatar-bot">
+        <img src="src/Logo.webp" alt="" class="w-[24px] h-[24px] rounded-full object-cover" />
+      </div>
+      <div class="bubble bubble-bot typing-bubble">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  </main>
+
+  <!-- ============ INPUT ============ -->
+  <footer class="footer-glass relative z-10 px-4 md:px-16 pt-4 pb-5 animate-fade-up" style="animation-delay:.15s">
+    <form id="chat-form" autocomplete="off" class="input-shell max-w-3xl mx-auto flex gap-2.5 p-2 rounded-3xl">
+      <input id="chat-input" type="text" maxlength="2000" autofocus placeholder="Escribe lo que sientes..." />
+      <button id="send-btn" type="submit" aria-label="Enviar"
+              class="tilt btn-send btn-shine w-[46px] h-[46px] grid place-items-center rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed">
+        <svg id="send-icon" class="send-icon w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/>
+        </svg>
+      </button>
+    </form>
+    <p class="max-w-3xl mx-auto mt-2.5 text-center text-[.68rem]" style="color:var(--text-dim)">Nexus puede cometer errores. No sustituye ayuda profesional.</p>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="background.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
